@@ -1,6 +1,8 @@
 # Arknights Base Vault
 
-明日方舟基建 RAG 知识库。当前语料以机制说明、体系论证和散件速查为主，供后续问答、检索增强和人工校对使用。
+明日方舟基建知识库 + 问答 skill。语料以机制说明、体系论证和散件速查为主，供问答、检索增强和人工校对使用。
+
+AI agent 在本仓库工作请先读 [`AGENTS.md`](AGENTS.md)。
 
 ## 校对入口
 
@@ -19,29 +21,48 @@
 
 ## 问答 skill
 
-`.claude/skills/gongsun-changle/` 是基于本知识库的基建问答 skill（Claude Code）。
+`.claude/skills/gongsun-changle/` 是基于本知识库的基建问答 skill。
+
+**不绑定特定宿主。** 除 frontmatter 外，skill 全部是纯 markdown 与相对仓库根的路径——任何能读文件、能把一段 markdown 当指令执行的 agent 都可以用。
+
+### 组成
+
+| 路径 | 内容 | 维护方式 |
+|------|------|---------|
+| `SKILL.md` | 回答方针：作用域判定、指代解析、约束检查清单、边界判定、计算政策 | 人工 |
+| `references/` | 425 干员名册、747 基建技能（按 9 设施分片，逐条标注解锁/提升）、81 条官方术语、82 组同效不同名技能、指代歧义表 | **机器生成，勿手改** |
+| `guides/` | 基建物流链、截图读法 | 人工 |
+| `scripts/` | `build_refs.py` 生成 references；`check_corpus.py` 生成语料校对清单 | 人工 |
 
 ### 安装
 
-前置：[Claude Code](https://claude.com/claude-code)。
-
-**只想用它回答问题** —— `references/` 已随仓库提供，开箱即用，**不需要 Python，也不需要另外两个数据仓库**：
+`references/` 已随仓库提供，**开箱即用——不需要 Python，也不需要另外两个数据仓库**。
 
 ```bash
 git clone https://github.com/hansjohn819-commits/arknights-base-vault.git
 ```
 
-```bash
-cd arknights-base-vault
-```
+按宿主分三种情况：
 
-```bash
-claude
-```
+- **支持 Agent Skills 规范的** —— 把 `gongsun-changle/` 放进宿主的 skill 目录即可。注意 frontmatter 里的 `when_to_use` 是扩展字段，不在规范允许列表（`allowed-tools` / `compatibility` / `description` / `license` / `metadata` / `name`）内；严格校验的宿主需要把它的内容并进 `description`。
+- **有自己的规则机制、格式不同的** —— skill 正文一个字都不用改，只换 frontmatter。
+- **没有 skill 机制的** —— 仓库根的 [`AGENTS.md`](AGENTS.md) 已写好入口指令，宿主读到它就会去读 `SKILL.md`。或者直接告诉 agent：「读 `.claude/skills/gongsun-changle/SKILL.md`，按它的要求回答」。
 
-**必须在仓库根目录启动**。skill 装在仓库自己的 `.claude/skills/` 下，如果你在**上层目录**启动，Claude Code 不会在启动时加载它——嵌套目录里的 skill 要等读写过该目录下的文件之后才可用，命令也不会出现在 `/` 菜单里。
+**在仓库根目录启动 agent。** `SKILL.md` 里的路径都相对仓库根；在上层目录启动时它会退回 `arknights-base-vault/` 前缀，但部分宿主的 skill 发现机制不会加载嵌套目录里的 skill（Claude Code 就是这样——要等读写过该目录下的文件之后才可用，命令也不会出现在 `/` 菜单里）。
 
-**想重新生成 `references/`**（游戏版本更新之后）—— 额外需要 Python 3.10+，以及两个数据仓库与本仓库**互为兄弟目录**：
+同理，**不建议复制到宿主的全局 skill 目录**：`SKILL.md` 的语料路径是相对本仓库写的（`docs/...`），复制走之后读不到语料，得自己改成绝对路径。
+
+### 怎么用
+
+直接问基建问题就行：「贸易站放谁」「巫恋核缺人怎么办」「243 怎么排」「为什么巫恋归零不影响裁缝」「XX 干员基建怎么样」。
+
+宿主支持斜杠命令时也可以显式调用，命令名取自 skill 的目录名（在 Claude Code 下是 `/gongsun-changle`）。
+
+回答范围限定在基建：排班、干员搭配、体系选择、设施效率、布局、缺人降级、基建机制。不涉及战斗、关卡、抽卡和战斗向的练度规划。需要精确产量或最优排班时会引导到 [可露希尔基建终端工具](https://riic.autos/)。
+
+### 重新生成 references/
+
+游戏版本更新之后需要。额外要 Python 3.10+，以及两个数据仓库与本仓库**互为兄弟目录**：
 
 ```
 <任意父目录>/
@@ -56,32 +77,13 @@ python .claude/skills/gongsun-changle/scripts/build_refs.py
 
 按上面的布局放好就不用带参数；放在别处用 `--workspace <公共父目录>` 指定。目录缺失时脚本会直接报错并提示，不会生成半成品。
 
-**装成全局 skill？** 技术上可以把 `gongsun-changle/` 复制到 `~/.claude/skills/`，但 `SKILL.md` 里的语料路径是相对本仓库写的（`docs/...`），复制走之后要自己改成绝对路径，否则读不到语料。不推荐。
-
-### 怎么用
-
-两种触发方式：
-
-- **手动**：输入 `/gongsun-changle`
-- **自动**：直接问基建问题即可，Claude 会自己判断要不要加载。比如「贸易站放谁」「巫恋核缺人怎么办」「243 怎么排」「为什么巫恋归零不影响裁缝」「XX 干员基建怎么样」
-
-回答范围限定在基建：排班、干员搭配、体系选择、设施效率、布局、缺人降级、基建机制。不涉及战斗、关卡、抽卡和战斗向的练度规划。需要精确产量或最优排班时会引导到 [可露希尔基建终端工具](https://riic.autos/)。
-
-### 目录结构
-
-| 路径 | 内容 |
-|------|------|
-| `SKILL.md` | 回答方针、指代解析流程、约束检查清单、计算政策 |
-| `references/` | **机器生成，请勿手改**。425 干员名册、747 基建技能（按设施分片，标注解锁/提升）、81 条官方术语、82 组同效技能、指代歧义表 |
-| `guides/` | 人工维护。基建物流链、截图读法 |
-| `scripts/build_refs.py` | 从 `RIIC-Web` 与 `RhodeLogisticsSteward` 的本地数据合并生成 `references/` |
-| `scripts/check_corpus.py` | 把 `docs/` 与全量数据对照，生成 `语料校对清单.md` |
-
-数据更新后重跑：
+### 校对语料
 
 ```bash
-python .claude/skills/gongsun-changle/scripts/build_refs.py
+python .claude/skills/gongsun-changle/scripts/check_corpus.py
 ```
+
+把 `docs/` 与全量数据逐项对照，在仓库根生成 `语料校对清单.md`：干员名与星级核对、练度记法、简称合称、技能名与官方数据的对应、派系归属断言核对、数值口径不一致、同效干员漏收。每条都带出处，改完语料重跑即可复查。
 
 ### 维护分工
 
