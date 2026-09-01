@@ -26,3 +26,6 @@ __pycache__/
 
 # skill 评测记录（题型与判分，开发过程产物，不随仓库分发）
 .claude/skills/gongsun-changle/evals/
+
+# 协作待办（本地维护，不随仓库分发）
+TODO.md

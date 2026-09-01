@@ -17,8 +17,16 @@
   - roomType 可由主源 id 前缀唯一推出，与补源标注 100% 一致
   - 星级口径 主源 rarity == 补源 rarity + 1，零例外（主源为实际星数）
 
+目录布局（三个仓库互为兄弟目录，`--workspace` 指向它们的公共父目录）：
+    <workspace>/
+      ├── arknights-base-vault/       本仓库
+      ├── RIIC-Web/                   主源
+      └── RhodeLogisticsSteward/      补源
+
 用法：
-    python build_refs.py [--workspace F:\\RIIC\\workspace] [--json 合并数据输出路径]
+    python build_refs.py [--workspace <公共父目录>] [--json 合并数据输出路径]
+
+`--workspace` 默认取本仓库的上一级目录，符合上述布局时无需指定。
 """
 
 from __future__ import annotations
@@ -563,15 +571,27 @@ def render_provenance(manifest, merged, skill_meta, terms_parsed) -> str:
 
 # ---------------------------------------------------------------- 主流程
 
+#: 本仓库根目录（scripts / gongsun-changle / skills / .claude / <仓库根>）
+REPO_ROOT = Path(__file__).resolve().parents[4]
+#: 三个仓库的公共父目录——RIIC-Web 与 RhodeLogisticsSteward 是本仓库的兄弟目录
+DEFAULT_WORKSPACE = REPO_ROOT.parent
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workspace", default=r"F:\RIIC\workspace",
-                    help="包含 RIIC-Web 与 RhodeLogisticsSteward 的目录")
+    ap.add_argument("--workspace", default=str(DEFAULT_WORKSPACE),
+                    help="包含 RIIC-Web 与 RhodeLogisticsSteward 的目录（默认为本仓库的上一级）")
     ap.add_argument("--out", default=None, help="references 输出目录，默认脚本同级的 ../references")
     ap.add_argument("--json", default=None, help="额外输出合并后的 JSON（供分析用）")
     args = ap.parse_args()
 
     workspace = Path(args.workspace)
+    for name in ("RIIC-Web", "RhodeLogisticsSteward"):
+        if not (workspace / name).is_dir():
+            ap.error(f"在 {workspace} 下找不到 {name}/。\n"
+                     f"这两个仓库需要和本仓库放在同一层目录，"
+                     f"或用 --workspace 指定它们的公共父目录。")
+
     out_dir = Path(args.out) if args.out else Path(__file__).resolve().parent.parent / "references"
     out_dir.mkdir(parents=True, exist_ok=True)
 

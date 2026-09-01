@@ -7,7 +7,7 @@
   check_corpus.py 生成给人看的校对清单（面向公孙 / KnightCode）
 
 语料改动后重跑即可复查。用法：
-    python check_corpus.py [--workspace F:\\RIIC\\workspace] [--out 输出路径]
+    python check_corpus.py [--workspace <公共父目录>] [--out 输出路径]
 """
 
 from __future__ import annotations
@@ -123,7 +123,8 @@ def candidates_from(text: str) -> set[str]:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workspace", default=r"F:\RIIC\workspace")
+    ap.add_argument("--workspace", default=str(B.DEFAULT_WORKSPACE),
+                    help="包含 RIIC-Web 与 RhodeLogisticsSteward 的目录（默认为本仓库的上一级）")
     ap.add_argument("--out", default=None,
                     help="输出路径，默认仓库根目录下的 语料校对清单.md")
     args = ap.parse_args()

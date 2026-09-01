@@ -15,25 +15,52 @@
 
 - `docs/**/*.md` 是知识库正文，适合进入 RAG 索引。
 - `meta/templates/` 是写作模板和系统提示词，不应作为玩家知识正文直接入库。
-- `TODO.md` 是协作待办，不应作为问答语料入库。
 - `语料校对清单.md` 由脚本生成，供人工校对，不入库。
 
 ## 问答 skill
 
 `.claude/skills/gongsun-changle/` 是基于本知识库的基建问答 skill（Claude Code）。
 
-### 怎么用
+### 安装
 
-**先在仓库根目录启动 Claude Code**：
+前置：[Claude Code](https://claude.com/claude-code)。
+
+**只想用它回答问题** —— `references/` 已随仓库提供，开箱即用，**不需要 Python，也不需要另外两个数据仓库**：
+
+```bash
+git clone https://github.com/hansjohn819-commits/arknights-base-vault.git
+```
 
 ```bash
 cd arknights-base-vault
+```
+
+```bash
 claude
 ```
 
-这一步是必须的。skill 装在仓库自己的 `.claude/skills/` 下，如果你在**上层目录**启动，Claude Code 不会在启动时加载它——嵌套目录里的 skill 要等读写过该目录下的文件之后才可用，命令也不会出现在 `/` 菜单里。
+**必须在仓库根目录启动**。skill 装在仓库自己的 `.claude/skills/` 下，如果你在**上层目录**启动，Claude Code 不会在启动时加载它——嵌套目录里的 skill 要等读写过该目录下的文件之后才可用，命令也不会出现在 `/` 菜单里。
 
-然后两种触发方式：
+**想重新生成 `references/`**（游戏版本更新之后）—— 额外需要 Python 3.10+，以及两个数据仓库与本仓库**互为兄弟目录**：
+
+```
+<任意父目录>/
+  ├── arknights-base-vault/     本仓库
+  ├── RIIC-Web/                 主源：干员目录、基建技能目录、官方术语表
+  └── RhodeLogisticsSteward/    补源：roomType / efficiency / targets / 派系归属
+```
+
+```bash
+python .claude/skills/gongsun-changle/scripts/build_refs.py
+```
+
+按上面的布局放好就不用带参数；放在别处用 `--workspace <公共父目录>` 指定。目录缺失时脚本会直接报错并提示，不会生成半成品。
+
+**装成全局 skill？** 技术上可以把 `gongsun-changle/` 复制到 `~/.claude/skills/`，但 `SKILL.md` 里的语料路径是相对本仓库写的（`docs/...`），复制走之后要自己改成绝对路径，否则读不到语料。不推荐。
+
+### 怎么用
+
+两种触发方式：
 
 - **手动**：输入 `/gongsun-changle`
 - **自动**：直接问基建问题即可，Claude 会自己判断要不要加载。比如「贸易站放谁」「巫恋核缺人怎么办」「243 怎么排」「为什么巫恋归零不影响裁缝」「XX 干员基建怎么样」
@@ -70,5 +97,5 @@ python .claude/skills/gongsun-changle/scripts/build_refs.py
 - `base_systems.json` 尚未建立，当前体系关系主要写在 Markdown front matter 和正文中。
 - ~~`docs/5-cli求解器/`~~ 已废弃：求解器方案改为引导用户到 [可露希尔基建终端工具](https://riic.autos/)。
 
-以上缺口与待裁决的语料问题见 `TODO.md`。
+另有若干待裁决的语料问题（数值口径不一致、同效干员漏收等），由 `check_corpus.py` 生成的 `语料校对清单.md` 逐条列出并附出处。
 
